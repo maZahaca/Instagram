@@ -17,7 +17,7 @@
 			"Zelenin": "lib/"
 		}
 	},
-	"keywords": [ "rss", "atom" ],
+	"keywords": [ "instagram", "api" ],
 	"version": "0.1.0",
 	"homepage": "https://github.com/zelenin/Instagram"
 }
