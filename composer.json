@@ -1,6 +1,6 @@
 {
 	"name": "zelenin/instagram",
-	"description": "Instagram",
+	"description": "A PHP implementation of the Instagram API",
 	"minimum-stability": "stable",
 	"authors": [
 		{
