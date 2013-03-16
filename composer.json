@@ -1,0 +1,23 @@
+{
+	"name": "zelenin/instagram",
+	"description": "Instagram",
+	"minimum-stability": "stable",
+	"authors": [
+		{
+			"name": "Aleksandr Zelenin",
+			"email": "aleksandr@zelenin.me"
+		}
+	],
+	"require": {
+		"php": ">=5.3.0",
+		"zelenin/curl": "dev-master"
+	},
+	"autoload": {
+		"psr-0": {
+			"Zelenin": "lib/"
+		}
+	},
+	"keywords": [ "rss", "atom" ],
+	"version": "0.1.0",
+	"homepage": "https://github.com/zelenin/Instagram"
+}
