@@ -1,23 +1,32 @@
 {
 	"name": "zelenin/instagram",
 	"description": "A PHP implementation of the Instagram API",
-	"minimum-stability": "stable",
+	"version": "0.1.2",
+	"type": "library",
+	"keywords": ["instagram", "api"],
+	"homepage": "https://github.com/zelenin/VK",
+	"time": "2013-08-29",
+	"license": "MIT",
 	"authors": [
 		{
 			"name": "Aleksandr Zelenin",
-			"email": "aleksandr@zelenin.me"
+			"email": "aleksandr@zelenin.me",
+			"homepage": "http://zelenin.me",
+			"role": "Developer"
 		}
 	],
+	"support": {
+		"issues": "https://github.com/zelenin/Instagram/issues",
+		"source": "https://github.com/zelenin/Instagram"
+	},
 	"require": {
 		"php": ">=5.3.0",
 		"zelenin/curl": "dev-master"
 	},
 	"autoload": {
 		"psr-0": {
-			"Zelenin": "lib/"
+			"Zelenin\\": "src/"
 		}
 	},
-	"keywords": [ "instagram", "api" ],
-	"version": "0.1.1",
-	"homepage": "https://github.com/zelenin/Instagram"
+	"minimum-stability": "stable"
 }

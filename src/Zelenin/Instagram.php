@@ -6,8 +6,8 @@
  * @package Instagram
  * @author  Aleksandr Zelenin <aleksandr@zelenin.me>
  * @link    https://github.com/zelenin/Instagram
- * @version 0.1.1
- * @license http://opensource.org/licenses/gpl-3.0.html GPL-3.0
+ * @license MIT
+ * @version 0.1.2
  */
 
 namespace Zelenin;
@@ -22,7 +22,7 @@ class Instagram
 	const OAUTH = 'https://api.instagram.com/oauth';
 	const API = 'https://api.instagram.com/v1';
 	const OEMBED = 'http://api.instagram.com/oembed';
-	const VERSION = '0.1.1';
+	const VERSION = '0.1.2';
 
 	public function __construct( $client_id, $client_secret, $redirect_uri, $access_token = null )
 	{
