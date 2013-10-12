@@ -21,7 +21,7 @@
 	},
 	"require": {
 		"php": ">=5.4.0",
-		"guzzle/guzzle": "v3.7.1"
+		"guzzle/guzzle": "v3.0.7"
 	},
 	"autoload": {
 		"psr-0": {
