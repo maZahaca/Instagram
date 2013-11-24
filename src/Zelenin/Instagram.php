@@ -12,6 +12,8 @@
 
 namespace Zelenin;
 
+use Guzzle\Http\Client;
+
 class Instagram
 {
 	private $_client_id;
@@ -19,6 +21,10 @@ class Instagram
 	private $_redirect_uri;
 	private $_access_token;
 	private $_curl;
+
+    private $beforeRequest  = null;
+    private $afterRequest   = null;
+
 	const OAUTH = 'https://api.instagram.com/oauth';
 	const API = 'https://api.instagram.com/v1';
 	const OEMBED = 'http://api.instagram.com/oembed';
@@ -30,8 +36,38 @@ class Instagram
 		$this->_client_secret = $client_secret;
 		$this->_redirect_uri = $redirect_uri;
 		$this->_access_token = $access_token;
-		$this->_curl = new Curl;
+		$this->_curl = new Client();
 	}
+
+    /**
+     * @param $access_token
+     * @return $this
+     */
+    public function setAccessToken($access_token)
+    {
+        $this->_access_token = $access_token;
+        return $this;
+    }
+
+    /**
+     * @param callable $function
+     * @return $this
+     */
+    public function setBeforeRequestFunction(\Closure $function)
+    {
+        $this->beforeRequest = $function;
+        return $this;
+    }
+
+    /**
+     * @param callable $function
+     * @return $this
+     */
+    public function setAfterRequestFunction(\Closure $function)
+    {
+        $this->afterRequest = $function;
+        return $this;
+    }
 
 	public function getToken( $scope = 'basic' )
 	{
@@ -51,8 +87,8 @@ class Instagram
 				'redirect_uri' => $this->_redirect_uri,
 				'code' => $_GET['code']
 			);
-			$response = $this->_curl->post( self::OAUTH . '/access_token', $params );
-			return json_decode( $response['body'], true );
+			$response = $this->request('post', self::OAUTH . '/access_token', $params);
+			return json_decode( $response, true );
 		}
 		return false;
 	}
@@ -67,8 +103,8 @@ class Instagram
 				'callback_url' => $callback_url
 			);
 			$params = array_merge( $params, $defaults );
-			$response = $this->_curl->post( self::API . '/subscriptions/', $params );
-			return $response['body'];
+			$response = $this->request('post', self::API . '/subscriptions/', $params);
+			return $response;
 		} else {
 			echo $_GET['hub_challenge'];
 		}
@@ -123,8 +159,8 @@ class Instagram
 			'client_id' => $this->_client_id,
 			'client_secret' => $this->_client_secret
 		);
-		$response = $this->_curl->get( self::API . '/subscriptions', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/subscriptions', $params);
+		return json_decode( $response, true );
 	}
 
 	public function deleteSubscription( $object = null, $id = null )
@@ -135,15 +171,15 @@ class Instagram
 		);
 		if ( $object ) $params['object'] = $object;
 		if ( $id ) $params['id'] = $id;
-		$response = $this->_curl->delete( self::API . '/subscriptions', $params );
-		return $response['body'];
+		$response = $this->request('delete', self::API . '/subscriptions', $params);
+		return $response;
 	}
 
 	public function getUser( $user_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/users/' . $user_id, $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/users/' . $user_id, $params);
+		return json_decode( $response, true );
 	}
 
 	public function getSelf( $count = null, $min_id = null, $max_id = null )
@@ -152,8 +188,8 @@ class Instagram
 		if ( $count ) $params['count'] = $count;
 		if ( $min_id ) $params['min_id'] = $min_id;
 		if ( $max_id ) $params['max_id'] = $max_id;
-		$response = $this->_curl->get( self::API . '/users/self/feed', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/users/self/feed', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getUserMedia( $user_id, $count = null, $max_timestamp = null, $min_timestamp = null, $min_id = null, $max_id = null )
@@ -164,8 +200,8 @@ class Instagram
 		if ( $min_timestamp ) $params['min_timestamp'] = $min_timestamp;
 		if ( $min_id ) $params['min_id'] = $min_id;
 		if ( $max_id ) $params['max_id'] = $max_id;
-		$response = $this->_curl->get( self::API . '/users/' . $user_id . '/media/recent', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/users/' . $user_id . '/media/recent', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getSelfLiked( $count = null, $max_like_id = null )
@@ -173,8 +209,8 @@ class Instagram
 		$params['access_token'] = $this->_access_token;
 		if ( $count ) $params['count'] = $count;
 		if ( $max_like_id ) $params['max_like_id'] = $max_like_id;
-		$response = $this->_curl->get( self::API . '/users/self/media/liked', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/users/self/media/liked', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getUserSearch( $q, $count = null )
@@ -184,36 +220,36 @@ class Instagram
 			'q' => $q
 		);
 		if ( $count ) $params['count'] = $count;
-		$response = $this->_curl->get( self::API . '/users/search', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/users/search', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getUserFollows( $user_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/users/' . $user_id . '/follows', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/users/' . $user_id . '/follows', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getUserFollowed( $user_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/users/' . $user_id . '/followed-by', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/users/' . $user_id . '/followed-by', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getUserRequestsFollows()
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/users/self/requested-by', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/users/self/requested-by', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getUserRelationship( $user_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/users/' . $user_id . '/relationship', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/users/' . $user_id . '/relationship', $params);
+		return json_decode( $response, true );
 	}
 
 	private function setUserRelationship( $user_id, $action )
@@ -222,8 +258,8 @@ class Instagram
 			'access_token' => $this->_access_token,
 			'action' => $action
 		);
-		$response = $this->_curl->post( self::API . '/users/' . $user_id . '/relationship', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('post', self::API . '/users/' . $user_id . '/relationship', $params);
+		return json_decode( $response, true );
 	}
 
 	public function setUserFollow( $user_id )
@@ -259,8 +295,8 @@ class Instagram
 	public function getMedia( $media_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/media/' . $media_id, $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/media/' . $media_id, $params);
+		return json_decode( $response, true );
 	}
 
 	public function getMediaSearch( $lat = null, $lng = null, $distance = null, $min_timestamp = null, $max_timestamp = null )
@@ -271,22 +307,22 @@ class Instagram
 		if ( $lng ) $params['lng'] = $lng;
 		if ( $min_timestamp ) $params['min_timestamp'] = $min_timestamp;
 		if ( $max_timestamp ) $params['max_timestamp'] = $max_timestamp;
-		$response = $this->_curl->get( self::API . '/media/search/', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/media/search/', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getMediaPopular()
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/media/popular', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/media/popular', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getComments( $media_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/media/' . $media_id . '/comments', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/media/' . $media_id . '/comments', $params);
+		return json_decode( $response, true );
 	}
 
 	public function postComments( $media_id, $text )
@@ -295,43 +331,43 @@ class Instagram
 			'access_token' => $this->_access_token,
 			'text' => $text
 		);
-		$response = $this->_curl->post( self::API . '/media/' . $media_id . '/comments', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('post', self::API . '/media/' . $media_id . '/comments', $params);
+		return json_decode( $response, true );
 	}
 
 	public function deleteComments( $media_id, $comment_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->delete( self::API . '/media/' . $media_id . '/comments/' . $comment_id, $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('delete', self::API . '/media/' . $media_id . '/comments/' . $comment_id, $params);
+		return json_decode( $response, true );
 	}
 
 	public function getLikes( $media_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/media/' . $media_id . '/likes', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/media/' . $media_id . '/likes', $params);
+		return json_decode( $response, true );
 	}
 
 	public function postLikes( $media_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->post( self::API . '/media/' . $media_id . '/likes', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('post', self::API . '/media/' . $media_id . '/likes', $params);
+		return json_decode( $response, true );
 	}
 
 	public function deleteLikes( $media_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->delete( self::API . '/media/' . $media_id . '/likes', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('delete', self::API . '/media/' . $media_id . '/likes', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getTag( $tag_name )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/tags/' . $tag_name, $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/tags/' . $tag_name, $params);
+		return json_decode( $response, true );
 	}
 
 	public function getTagMedia( $tag_name, $min_tag_id = null, $max_tag_id = null )
@@ -339,8 +375,8 @@ class Instagram
 		$params['access_token'] = $this->_access_token;
 		if ( $min_tag_id ) $params['min_tag_id'] = $min_tag_id;
 		if ( $max_tag_id ) $params['max_tag_id'] = $max_tag_id;
-		$response = $this->_curl->get( self::API . '/tags/' . $tag_name . '/media/recent', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/tags/' . $tag_name . '/media/recent', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getTagSearch( $q )
@@ -349,15 +385,15 @@ class Instagram
 			'access_token' => $this->_access_token,
 			'q' => $q
 		);
-		$response = $this->_curl->get( self::API . '/tags/search', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/tags/search', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getLocation( $location_id )
 	{
 		$params['access_token'] = $this->_access_token;
-		$response = $this->_curl->get( self::API . '/locations/' . $location_id, $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/locations/' . $location_id, $params);
+		return json_decode( $response, true );
 	}
 
 	public function getLocationsMedia( $location_id, $min_timestamp = null, $min_id = null, $max_id = null, $max_timestamp = null )
@@ -367,8 +403,8 @@ class Instagram
 		if ( $min_id ) $params['min_id'] = $min_id;
 		if ( $max_id ) $params['max_id'] = $max_id;
 		if ( $max_timestamp ) $params['max_timestamp'] = $max_timestamp;
-		$response = $this->_curl->get( self::API . '/locations/' . $location_id . '/media/recent', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/locations/' . $location_id . '/media/recent', $params);
+		return json_decode( $response, true );
 	}
 
 	public function getLocationsSearch( $lat = null, $lng = null, $distance = null, $foursquare_v2_id = null, $foursquare_id = null )
@@ -379,8 +415,8 @@ class Instagram
 		if ( $lng ) $params['lng'] = $lng;
 		if ( $foursquare_v2_id ) $params['foursquare_v2_id'] = $foursquare_v2_id;
 		if ( $foursquare_id ) $params['foursquare_id'] = $foursquare_id;
-		$response = $this->_curl->get( self::API . '/locations/search', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/locations/search', $params );
+		return json_decode( $response, true );
 	}
 
 	public function getGeography( $geo_id, $count = null, $min_id = null )
@@ -388,8 +424,8 @@ class Instagram
 		$params['client_id'] = $this->_client_id;
 		if ( $count ) $params['count'] = $count;
 		if ( $min_id ) $params['min_id'] = $min_id;
-		$response = $this->_curl->get( self::API . '/geographies/' . $geo_id . '/media/recent', $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::API . '/geographies/' . $geo_id . '/media/recent', $params );
+		return json_decode( $response, true );
 	}
 
 	public function oembed( $url, $callback = null, $maxheight = null, $maxwidth = null )
@@ -398,16 +434,51 @@ class Instagram
 		if ( $callback ) $params['callback'] = $callback;
 		if ( $maxheight ) $params['maxheight'] = $maxheight;
 		if ( $maxwidth ) $params['maxwidth'] = $maxwidth;
-		$response = $this->_curl->get( self::OEMBED, $params );
-		return json_decode( $response['body'], true );
+		$response = $this->request('get', self::OEMBED, $params );
+		return json_decode( $response, true );
 	}
 
 	public function oembedRedirect( $url, $size = 'm' )
 	{
 		$url = trim( $url, '/' );
 		$params['size'] = $size;
-		$response = $this->_curl->get( $url . '/media/', $params );
-		$response = $this->_curl->get( $response['info']['redirect_url'] );
+		$response = $this->request('get', $url . '/media/', $params );
+		$response = $this->request('get', $response['info']['redirect_url'] );
 		return $response['info']['redirect_url'];
 	}
+
+    private function request($method, $uri, $params = null)
+    {
+        $method = strtoupper($method);
+        if($method === 'GET') {
+            $uri .= '?' . http_build_query($params);
+            $params = null;
+        }
+
+        if(is_callable($this->beforeRequest)) {
+            $fn = $this->beforeRequest;
+
+            $fn(
+                $method,
+                $uri,
+                $params
+            );
+        }
+
+        $request = $this->_curl->createRequest($method, $uri, null, $params);
+        $response = $request->send()->getBody(true);
+
+        if(is_callable($this->afterRequest)) {
+            $fn = $this->afterRequest;
+
+            $fn(
+                $method,
+                $uri,
+                $params,
+                $response
+            );
+        }
+
+        return $response;
+    }
 }
