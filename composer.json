@@ -1,5 +1,5 @@
 {
-	"name": "redcode/instagram-api",
+	"name": "zelenin/instagram",
 	"description": "A PHP implementation of the Instagram API",
 	"version": "0.1.2",
 	"type": "library",
