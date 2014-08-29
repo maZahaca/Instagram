@@ -370,9 +370,10 @@ class Instagram
 		return json_decode( $response, true );
 	}
 
-	public function getTagMedia( $tag_name, $min_tag_id = null, $max_tag_id = null )
+	public function getTagMedia( $tag_name, $count = null, $min_tag_id = null, $max_tag_id = null )
 	{
 		$params['access_token'] = $this->_access_token;
+        if ( $count ) $params['count'] = $count;
 		if ( $min_tag_id ) $params['min_tag_id'] = $min_tag_id;
 		if ( $max_tag_id ) $params['max_tag_id'] = $max_tag_id;
 		$response = $this->request('get', self::API . '/tags/' . $tag_name . '/media/recent', $params);
